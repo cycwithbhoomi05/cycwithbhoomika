@@ -6,6 +6,49 @@ export const formatPrice = (price) => {
   }).format(price);
 };
 
+export const slugify = (text) => {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+};
+
+// Profile completeness validation
+export const isProfileComplete = (userData) => {
+  if (!userData) return false;
+  
+  const requiredFields = [
+    'name', 
+    'phone', 
+    'dob', 
+    'gender', 
+    'profession', 
+    'countryCode'
+  ];
+  
+  return requiredFields.every(field => {
+    const val = userData[field];
+    return val !== undefined && val !== null && val.toString().trim() !== '';
+  });
+};
+
+// Age calculator from DOB
+export const calculateAge = (dobString) => {
+  if (!dobString) return null;
+  const today = new Date();
+  const birthDate = new Date(dobString);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 export const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);

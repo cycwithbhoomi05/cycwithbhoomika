@@ -82,6 +82,15 @@ export const AuthProvider = ({ children }) => {
     setUserData(null);
   };
 
+  const refreshUser = async () => {
+    if (user) {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        setUserData({ id: userDoc.id, ...userDoc.data() });
+      }
+    }
+  };
+
   const value = {
     user,
     userData,
@@ -91,6 +100,7 @@ export const AuthProvider = ({ children }) => {
     register,
     loginWithGoogle,
     logout,
+    refreshUser,
   };
 
   return (

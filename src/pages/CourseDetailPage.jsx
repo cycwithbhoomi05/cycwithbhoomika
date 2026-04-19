@@ -8,21 +8,25 @@ import PricingSection from '../components/courses/PricingSection';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { PageLoader } from '../components/ui/Loader';
-import { formatPrice, getCategoryLabel, getCategoryColor } from '../utils/helpers';
+import { formatPrice, getCategoryLabel, getCategoryColor, isProfileComplete } from '../utils/helpers';
 import { HiClock, HiAcademicCap, HiUsers, HiStar, HiGlobeAlt, HiCheck } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import { createPaymentRecord } from '../services/paymentService';
 import { createEnrollment } from '../services/enrollmentService';
+import { generateEnrollmentLetter } from '../utils/pdfService';
+import ProfileSetupModal from '../components/profile/ProfileSetupModal';
 
 const CourseDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -63,11 +67,20 @@ const CourseDetailPage = () => {
       return;
     }
 
+    if (!isProfileComplete(userData)) {
+      setPendingPlan(planType);
+      setShowProfileModal(true);
+      return;
+    }
+
+    await processEnrollment(planType);
+  };
+
+  const processEnrollment = async (planType) => {
     let amount = course.price;
     if (planType === 'advance') amount = course.advanceAmount;
     if (planType === 'installment') amount = course.installmentPlan?.installmentAmount || course.price;
 
-    // For now, create enrollment directly (Razorpay integration needs API keys)
     try {
       const enrollmentId = await createEnrollment({
         userId: user.uid,
@@ -76,7 +89,7 @@ const CourseDetailPage = () => {
         paymentType: planType,
       });
 
-      await createPaymentRecord({
+      const paymentData = {
         userId: user.uid,
         courseId: id,
         enrollmentId,
@@ -86,9 +99,14 @@ const CourseDetailPage = () => {
         razorpaySignature: '',
         status: 'captured',
         paymentType: planType,
-      });
+      };
 
-      toast.success('Successfully enrolled! 🎉');
+      await createPaymentRecord(paymentData);
+
+      // Generate Auto-Downloading PDF Letter
+      generateEnrollmentLetter(userData, course, paymentData);
+
+      toast.success('Successfully enrolled! Enrollment Letter downloaded. 🎉');
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
@@ -270,6 +288,19 @@ const CourseDetailPage = () => {
       </div>
 
       <div className="h-16" />
+      
+      <ProfileSetupModal 
+        isOpen={showProfileModal} 
+        onClose={() => {
+          setShowProfileModal(false);
+          setPendingPlan(null);
+        }}
+        onComplete={() => {
+          if (pendingPlan) {
+            processEnrollment(pendingPlan);
+          }
+        }}
+      />
     </div>
   );
 };

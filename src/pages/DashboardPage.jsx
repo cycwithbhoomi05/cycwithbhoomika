@@ -8,8 +8,11 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import ProgressBar from '../components/ui/ProgressBar';
 import { PageLoader } from '../components/ui/Loader';
-import { formatPrice, formatDate, getCategoryLabel } from '../utils/helpers';
+import { formatPrice, formatDate, getCategoryLabel, calculateAge } from '../utils/helpers';
 import { HiAcademicCap, HiCreditCard, HiUser, HiBadgeCheck, HiDownload } from 'react-icons/hi';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
   const { user, userData } = useAuth();
@@ -19,6 +22,12 @@ const DashboardPage = () => {
   const [payments, setPayments] = useState([]);
   const [coursesData, setCoursesData] = useState({});
   const [loading, setLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const { refreshUser } = useAuth();
+  
+  const [profileForm, setProfileForm] = useState({
+    name: '', phone: '', countryCode: '+91', dob: '', gender: '', profession: '', state: '', country: ''
+  });
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -38,6 +47,19 @@ const DashboardPage = () => {
           }
         }
         setCoursesData(courseMap);
+        
+        if (userData) {
+          setProfileForm({
+            name: userData.name || '',
+            phone: userData.phone || '',
+            countryCode: userData.countryCode || '+91',
+            dob: userData.dob || '',
+            gender: userData.gender || '',
+            profession: userData.profession || '',
+            state: userData.state || '',
+            country: userData.country || 'India',
+          });
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -45,7 +67,22 @@ const DashboardPage = () => {
       }
     };
     load();
-  }, [user, navigate]);
+  }, [user, navigate, userData]);
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { ...profileForm });
+      await refreshUser();
+      toast.success('Profile updated successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update profile');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   if (loading) return <PageLoader />;
 
@@ -218,25 +255,78 @@ const DashboardPage = () => {
         )}
 
         {activeTab === 'profile' && (
-          <Card className="max-w-2xl">
+          <Card className="max-w-3xl">
             <h3 className="font-heading font-bold text-xl text-dark-800 mb-6">Profile Information</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-dark-600 mb-1">Full Name</label>
-                <input type="text" defaultValue={userData?.name || ''} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+            <form onSubmit={handleProfileUpdate} className="space-y-6">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Official Full Name</label>
+                  <input type="text" value={profileForm.name} onChange={e => setProfileForm({...profileForm, name: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Email <span className="text-xs font-normal text-dark-400">(Cannot be changed)</span></label>
+                  <input type="email" value={userData?.email || ''} disabled className="w-full px-4 py-3 rounded-xl border border-dark-200 bg-dark-50 text-dark-500 cursor-not-allowed" />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-dark-600 mb-1">Email</label>
-                <input type="email" value={userData?.email || ''} disabled className="w-full px-4 py-3 rounded-xl border border-dark-200 bg-dark-50 text-dark-400" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Mobile Number</label>
+                  <div className="flex gap-2">
+                    <select value={profileForm.countryCode} onChange={e => setProfileForm({...profileForm, countryCode: e.target.value})} className="w-24 px-3 py-3 rounded-xl border border-dark-200 bg-white">
+                      <option value="+91">+91</option>
+                      <option value="+1">+1</option>
+                      <option value="+44">+44</option>
+                      <option value="+971">+971</option>
+                    </select>
+                    <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="flex-1 w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" required />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Date of Birth</label>
+                  <div className="flex gap-3">
+                    <input type="date" value={profileForm.dob} onChange={e => setProfileForm({...profileForm, dob: e.target.value})} className="flex-1 px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" />
+                    <div className="w-20 px-3 py-3 rounded-xl bg-primary-50 text-primary-800 text-center font-semibold">
+                      {calculateAge(profileForm.dob) !== null && calculateAge(profileForm.dob) >= 0 ? `${calculateAge(profileForm.dob)}y` : '-'}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-dark-600 mb-1">Phone</label>
-                <input type="tel" defaultValue={userData?.phone || ''} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Profession</label>
+                  <input type="text" value={profileForm.profession} onChange={e => setProfileForm({...profileForm, profession: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Gender</label>
+                  <select value={profileForm.gender} onChange={e => setProfileForm({...profileForm, gender: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-dark-200 bg-white focus:ring-2 focus:ring-primary-500">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
               </div>
-              <button className="px-6 py-3 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors">
-                Save Changes
-              </button>
-            </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">State / Province</label>
+                  <input type="text" value={profileForm.state} onChange={e => setProfileForm({...profileForm, state: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-dark-600 mb-1">Country</label>
+                  <input type="text" value={profileForm.country} onChange={e => setProfileForm({...profileForm, country: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-dark-200 focus:ring-2 focus:ring-primary-500" />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <button type="submit" disabled={profileSaving} className="px-8 py-3 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 inline-flex items-center gap-2">
+                  {profileSaving ? 'Saving...' : 'Save Profile Changes'}
+                </button>
+              </div>
+            </form>
           </Card>
         )}
       </div>
