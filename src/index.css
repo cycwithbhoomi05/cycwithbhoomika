@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@theme {
+  /* Soft, professional off-whites for backgrounds */
+  --color-primary-50: #f8fafc;
+  --color-primary-100: #f1f5f9;
+  
+  /* Trusted corporate blue */
+  --color-primary-200: #dbeafe;
+  --color-primary-300: #bfdbfe;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;   /* Standard bright blue */
+  --color-primary-600: #2563eb;   /* Primary button blue */
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e3a8a;   /* Dark navy header */
+  --color-primary-900: #172554;
+
+  /* Sophisticated, muted gold / amber for accents */
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+
+  /* Clean grays/slate for neutral elements and text */
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;   /* Body text */
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;   /* Headings */
+  --color-dark-900: #0f172a;
+
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+/* Removed manual * reset which might conflict with Tailwind Preflight */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark-600);
+  background-color: var(--color-dark-50);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-dark-800);
+  letter-spacing: -0.02em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-dark-50);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-dark-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-400);
+}
+
+/* Clean, crisp utilities instead of glassmorphism */
+.glass {
+  background: #ffffff;
+  border: 1px solid var(--color-dark-200);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* Subtle Floating Animation for images/cards */
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+.animate-float {
+  animation: soft-float 4s ease-in-out infinite;
+}
+
+/* Minimal Gradient Text for highlights only */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Base Shadow */
+.custom-shadow {
+  box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); /* Soft, diffuse shadow */
+}
+
+/* Shimmer / Skeleton Loader */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-dark-100) 25%,
+    var(--color-dark-50) 50%,
+    var(--color-dark-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 8px;
+}
