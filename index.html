@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CYC With Bhoomikaa - Coming Soon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 700px;
+      padding: 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    h1 {
+      font-size: 2.8em;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .typing {
+      font-size: 1.2em;
+      margin: 20px 0;
+      border-right: 2px solid white;
+      white-space: nowrap;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .subtext {
+      font-size: 1em;
+      opacity: 0.85;
+      margin-top: 25px;
+    }
+
+    .credit {
+      margin-top: 40px;
+      font-size: 0.9em;
+      opacity: 0.7;
+    }
+
+    .credit a {
+      color: #00d4ff;
+      text-decoration: none;
+    }
+
+    .credit a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Floating particles */
+    .particle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      animation: float 10s linear infinite;
+    }
+
+    @keyframes float {
+      from {
+        transform: translateY(100vh);
+      }
+      to {
+        transform: translateY(-10vh);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>CYC With Bhoomikaa</h1>
+
+  <div class="typing" id="typing"></div>
+
+  <div class="subtext">
+    Stay tuned for an immersive web experience.
+  </div>
+
+  <div class="credit">
+    Development by <a href="https://netsyc.com" target="_blank">NETSYC</a><br>
+    <em>An ultimate web developer group</em>
+  </div>
+</div>
+
+<script>
+  // Typing Effect
+  const text = "Website is under construction...";
+  let index = 0;
+
+  function typeEffect() {
+    if (index < text.length) {
+      document.getElementById("typing").innerHTML += text.charAt(index);
+      index++;
+      setTimeout(typeEffect, 50);
+    }
+  }
+
+  typeEffect();
+
+  // Generate floating particles
+  function createParticles() {
+    for (let i = 0; i < 40; i++) {
+      let particle = document.createElement("div");
+      particle.classList.add("particle");
+
+      particle.style.left = Math.random() * 100 + "vw";
+      particle.style.animationDuration = (5 + Math.random() * 10) + "s";
+      particle.style.opacity = Math.random();
+
+      document.body.appendChild(particle);
+    }
+  }
+
+  createParticles();
+</script>
+
+</body>
+</html>
