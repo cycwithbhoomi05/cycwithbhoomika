@@ -6,6 +6,7 @@ import { BRAND } from '../utils/constants';
 import { FcGoogle } from 'react-icons/fc';
 import { HiMail, HiLockClosed, HiUser, HiPhone } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import logoImg from '../assets/images/logo_wb.png';
 
 const RegisterPage = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -60,9 +61,7 @@ const RegisterPage = () => {
           
           <div className="text-center mb-8">
             <Link to="/" className="inline-flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-lg bg-primary-700 flex items-center justify-center text-white font-bold text-xl">
-                C
-              </div>
+              <img src={logoImg} alt={BRAND.name} className="h-10 w-auto" />
               <span className="font-heading font-bold text-2xl text-dark-900 tracking-tight">{BRAND.name}</span>
             </Link>
             <h1 className="font-heading text-2xl font-bold text-dark-900 mb-2">Create an Account</h1>
@@ -158,6 +157,10 @@ const RegisterPage = () => {
                 </div>
               </div>
             </div>
+
+            <p className="text-xs text-dark-500 text-center mt-4">
+              By creating an account, you agree to our <Link to="/terms" className="text-primary-600 hover:underline">Terms & Conditions</Link>.
+            </p>
 
             <Button type="submit" variant="primary" size="lg" loading={loading} className="w-full !rounded-xl !py-3 mt-4">
               Create Account

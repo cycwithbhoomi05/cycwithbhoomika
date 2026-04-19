@@ -6,6 +6,7 @@ import { BRAND } from '../utils/constants';
 import { FcGoogle } from 'react-icons/fc';
 import { HiMail, HiLockClosed } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import logoImg from '../assets/images/logo_wb.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -48,9 +49,7 @@ const LoginPage = () => {
           
           <div className="text-center mb-10">
             <Link to="/" className="inline-flex items-center gap-3 mb-6 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 rounded-lg bg-primary-700 flex items-center justify-center text-white font-bold text-xl">
-                C
-              </div>
+              <img src={logoImg} alt={BRAND.name} className="h-10 w-auto" />
               <span className="font-heading font-bold text-2xl text-dark-900 tracking-tight">{BRAND.name}</span>
             </Link>
             <h1 className="font-heading text-2xl font-bold text-dark-900 mb-2">Welcome Back</h1>

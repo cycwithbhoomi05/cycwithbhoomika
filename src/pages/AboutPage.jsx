@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAboutContent } from '../services/cmsService';
 import { BRAND, EXPERTISE_AREAS } from '../utils/constants';
 import { HiCheck, HiStar, HiAcademicCap, HiHeart } from 'react-icons/hi';
+import bhoomiImg from '../assets/images/anime_bhoomikaa_wb.png';
 
 const AboutPage = () => {
   const [about, setAbout] = useState(null);
@@ -39,18 +40,12 @@ const AboutPage = () => {
 
             <div className="hidden lg:flex justify-center">
               <div className="relative">
-                <div className="w-80 h-96 rounded-3xl bg-dark-50 border border-dark-200 flex items-center justify-center custom-shadow overflow-hidden">
-                  {about?.photoUrl ? (
-                    <img src={about.photoUrl} alt={about.trainerName} className="w-full h-full object-cover rounded-3xl" />
-                  ) : (
-                    <div className="text-center">
-                      <div className="w-32 h-32 mx-auto rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-5xl font-bold mb-4">
-                        B
-                      </div>
-                      <p className="text-dark-900 font-heading font-bold text-xl">{about?.trainerName || 'Bhoomikaa'}</p>
-                      <p className="text-dark-500 text-sm mt-1">Certified Trainer & Coach</p>
-                    </div>
-                  )}
+                <div className="w-80 h-96 rounded-3xl bg-primary-100 flex items-end justify-center custom-shadow overflow-hidden border border-primary-200">
+                  <img 
+                    src={about?.photoUrl || bhoomiImg} 
+                    alt={about?.trainerName || 'Bhoomikaa'} 
+                    className="w-[90%] h-auto object-contain object-bottom drop-shadow-xl" 
+                  />
                 </div>
                 <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-5 border border-dark-100 custom-shadow animate-float">
                   <p className="text-dark-900 text-sm font-bold">500+ Lives Transformed ✨</p>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BRAND, ROUTES, CATEGORIES } from '../../utils/constants';
 import { FaPhone, FaEnvelope, FaLinkedin, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
+import logoImg from '../../assets/images/logo_wb.png';
 
 const Footer = () => {
   return (
@@ -11,9 +12,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-gold-500 flex items-center justify-center text-white font-bold text-lg">
-                C
-              </div>
+              <img src={logoImg} alt={BRAND.name} className="h-10 w-auto filter brightness-0 invert" />
               <span className="font-heading font-bold text-lg">{BRAND.name}</span>
             </div>
             <p className="text-dark-400 text-sm leading-relaxed mb-6">
@@ -94,8 +93,8 @@ const Footer = () => {
               © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-dark-500 hover:text-dark-300 text-xs transition-colors">Privacy Policy</a>
-              <a href="#" className="text-dark-500 hover:text-dark-300 text-xs transition-colors">Terms of Service</a>
+              <Link to={ROUTES.TERMS} className="text-dark-500 hover:text-dark-300 text-xs transition-colors">Privacy Policy</Link>
+              <Link to={ROUTES.TERMS} className="text-dark-500 hover:text-dark-300 text-xs transition-colors">Terms & Conditions</Link>
             </div>
           </div>
         </div>

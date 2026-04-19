@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { BRAND, ROUTES } from '../../utils/constants';
 import { HiMenu, HiX, HiUser, HiLogout, HiChevronDown } from 'react-icons/hi';
 import { MdDashboard } from 'react-icons/md';
+import logoImg from '../../assets/images/logo_wb.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,10 +49,8 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary-700 flex items-center justify-center text-white font-bold text-lg">
-              C
-            </div>
-            <div>
+            <img src={logoImg} alt={BRAND.name} className="h-10 w-auto" />
+            <div className="hidden sm:block">
               <span className="font-heading font-bold text-lg text-dark-800 tracking-tight">
                 {BRAND.name}
               </span>

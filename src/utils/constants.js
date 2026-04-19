@@ -24,6 +24,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
+  TERMS: '/terms',
   ADMIN: '/admin',
   ADMIN_COURSES: '/admin/courses',
   ADMIN_STUDENTS: '/admin/students',

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
 import { HiArrowRight, HiCheckCircle } from 'react-icons/hi';
+import bhoomiImg from '../../assets/images/anime_bhoomikaa_wb.png';
 
 const HeroBanner = () => {
   return (
@@ -60,14 +61,14 @@ const HeroBanner = () => {
 
           {/* Right Side Image/Graphic */}
           <div className="relative justify-center lg:justify-end hidden lg:flex mt-10 lg:mt-0">
-            {/* Main Image Frame - Responsive constraints */}
-            <div className="relative w-full max-w-[500px] aspect-[4/5] sm:h-[600px] rounded-3xl overflow-hidden custom-shadow border border-dark-100 bg-dark-50 translate-y-4 lg:translate-y-0">
+            {/* Main Image Frame - Transparent approach for Anime avatar */}
+            <div className="relative w-full max-w-[500px] sm:h-[600px] flex items-end justify-center translate-y-4 lg:translate-y-0 bg-primary-100 rounded-b-[100px] rounded-t-full border border-primary-200 overflow-hidden custom-shadow">
               <img 
-                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=1000" 
-                alt="Corporate Training" 
-                className="w-full h-full object-cover"
+                src={bhoomiImg} 
+                alt="Bhoomikaa" 
+                className="w-[90%] h-auto object-contain object-bottom drop-shadow-xl z-10"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-900/40 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-primary-200/50 to-transparent pointer-events-none" />
             </div>
 
             {/* Floating Stat Card (Clean Corporate Style) */}
