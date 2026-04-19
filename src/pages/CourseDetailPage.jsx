@@ -83,69 +83,72 @@ const CourseDetailPage = () => {
 
     const loadingToast = toast.loading('Initializing secure payment gateway...');
 
+    // Step 1: Create a Razorpay order on the server. This is MANDATORY.
+    let orderId;
     try {
-      // 1. Ask backend to generate Razorpay Secure Order
-      const orderDataBlock = await createRazorpayOrderOnServer(amount, id, user.uid, planType);
-      const generatedOrderId = orderDataBlock ? orderDataBlock.orderId : null;
-      
-      toast.dismiss(loadingToast);
-
-      // 2. Open Razorpay Check Modal
-      initiateRazorpayPayment(
-        {
-          amount,
-          orderId: generatedOrderId,
-          description: `Enrollment: ${course.title}`,
-          userName: userData?.name || user.displayName || '',
-          userEmail: userData?.email || user.email || '',
-          userPhone: userData?.phone || '',
-        },
-        async (successResponse) => {
-          // onSuccess Callback
-          toast.loading('Payment successful! Processing enrollment...', { id: 'post-pay-load' });
-          try {
-            const enrollmentId = await createEnrollment({
-              userId: user.uid,
-              courseId: id,
-              paymentStatus: 'active',
-              paymentType: planType,
-            });
-
-            const paymentData = {
-              userId: user.uid,
-              courseId: id,
-              enrollmentId,
-              amount,
-              razorpayOrderId: generatedOrderId || successResponse.razorpayOrderId,
-              razorpayPaymentId: successResponse.razorpayPaymentId,
-              razorpaySignature: successResponse.razorpaySignature || '',
-              status: 'captured',
-              paymentType: planType,
-            };
-
-            await createPaymentRecord(paymentData);
-            generateEnrollmentLetter(userData, course, paymentData);
-
-            toast.dismiss('post-pay-load');
-            toast.success('Successfully enrolled! Enrollment Letter downloaded. 🎉');
-            navigate('/dashboard');
-          } catch (enrollErr) {
-            console.error("Enrollment Registration failed:", enrollErr);
-            toast.dismiss('post-pay-load');
-            toast.error('Payment verified, but registration failed. Contact Support.');
-          }
-        },
-        (errorReason) => {
-          // onFailure Callback
-          toast.error(errorReason);
-        }
-      );
-
+      const orderData = await createRazorpayOrderOnServer(amount, id, user.uid, planType);
+      orderId = orderData.orderId;
     } catch (err) {
-      console.error(err);
+      console.error('Razorpay order creation failed:', err);
       toast.dismiss(loadingToast);
-      toast.error('Failed to initialize payment. Please try again.');
+      toast.error('Could not initialize payment. Please try again later.');
+      return; // HARD STOP - no order means no payment means no enrollment
     }
+
+    toast.dismiss(loadingToast);
+
+    // Step 2: Open Razorpay checkout. Enrollment only happens inside onSuccess.
+    await initiateRazorpayPayment(
+      {
+        amount,
+        orderId,
+        description: `Enrollment: ${course.title}`,
+        userName: userData?.name || user.displayName || '',
+        userEmail: userData?.email || user.email || '',
+        userPhone: userData?.phone || '',
+      },
+      async (successResponse) => {
+        // === PAYMENT VERIFIED BY RAZORPAY ===
+        const postPayToast = toast.loading('Payment successful! Finalizing enrollment...');
+        try {
+          const enrollmentId = await createEnrollment({
+            userId: user.uid,
+            courseId: id,
+            paymentStatus: 'active',
+            paymentType: planType,
+          });
+
+          await createPaymentRecord({
+            userId: user.uid,
+            courseId: id,
+            enrollmentId,
+            amount,
+            razorpayOrderId: successResponse.razorpayOrderId,
+            razorpayPaymentId: successResponse.razorpayPaymentId,
+            razorpaySignature: successResponse.razorpaySignature,
+            status: 'captured',
+            paymentType: planType,
+          });
+
+          generateEnrollmentLetter(userData, course, {
+            amount,
+            razorpayPaymentId: successResponse.razorpayPaymentId,
+            paymentType: planType,
+          });
+
+          toast.dismiss(postPayToast);
+          toast.success('Successfully enrolled! Enrollment Letter downloaded. 🎉');
+          navigate('/dashboard');
+        } catch (enrollErr) {
+          console.error('Post-payment enrollment failed:', enrollErr);
+          toast.dismiss(postPayToast);
+          toast.error('Payment received but enrollment failed. Please contact support immediately.');
+        }
+      },
+      (errorReason) => {
+        toast.error(errorReason);
+      }
+    );
   };
 
   if (loading) return <PageLoader />;

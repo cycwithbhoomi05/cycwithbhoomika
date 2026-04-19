@@ -108,72 +108,84 @@ export const loadRazorpayScript = () => {
 };
 
 export const createRazorpayOrderOnServer = async (amount, courseId, userId, paymentType = 'full') => {
-  try {
-    const response = await fetch('https://us-central1-cycwithbhoomikaa.cloudfunctions.net/createRazorpayOrder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, courseId, userId, paymentType })
-    });
-    
-    if (!response.ok) {
-      console.warn("Server-side order generation failed, possibly not deployed. Attempting legacy fallback.");
-      return null;
-    }
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.error('Failed to communicate with Firebase Functions for order ID', err);
-    return null;
+  const response = await fetch('https://us-central1-cycwithbhoomikaa.cloudfunctions.net/createRazorpayOrder', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, courseId, userId, paymentType })
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown server error');
+    throw new Error(`Order creation failed: ${errorText}`);
   }
+  
+  const data = await response.json();
+  if (!data.orderId) {
+    throw new Error('Server returned invalid order data.');
+  }
+  return data;
 };
 
-export const initiateRazorpayPayment = async (orderData, onSuccess, onFailure) => {
-  const loaded = await loadRazorpayScript();
-  if (!loaded) {
-    onFailure('Failed to load Razorpay payment gateway. Please check your connection.');
-    return;
-  }
+export const initiateRazorpayPayment = (orderData, onSuccess, onFailure) => {
+  return new Promise(async (resolve) => {
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      onFailure('Failed to load Razorpay payment gateway. Please check your connection.');
+      resolve(false);
+      return;
+    }
 
-  // Live Razorpay API Key Provided
-  const options = {
-    key: 'rzp_live_SfMOYnWafTDSJ1',
-    amount: orderData.amount * 100, // Amount in paise
-    currency: 'INR',
-    name: 'CYC with Bhoomikaa',
-    description: orderData.description || 'Course Payment',
-    handler: (response) => {
-      onSuccess({
-        razorpayPaymentId: response.razorpay_payment_id,
-        razorpayOrderId: response.razorpay_order_id || orderData.orderId || 'manual_order',
-        razorpaySignature: response.razorpay_signature || '',
-      });
-    },
-    prefill: {
-      name: orderData.userName || '',
-      email: orderData.userEmail || '',
-      contact: orderData.userPhone || '',
-    },
-    theme: {
-      color: '#1E3A8A',
-    },
-    modal: {
-      ondismiss: () => {
-        onFailure('Payment window was closed manually.');
+    // STRICT: order_id is mandatory for live payments
+    if (!orderData.orderId) {
+      onFailure('Payment cannot proceed without a valid order. Please try again.');
+      resolve(false);
+      return;
+    }
+
+    const options = {
+      key: 'rzp_live_SfMOYnWafTDSJ1',
+      amount: orderData.amount * 100,
+      currency: 'INR',
+      name: 'CYC with Bhoomikaa',
+      description: orderData.description || 'Course Payment',
+      order_id: orderData.orderId,
+      handler: (response) => {
+        // Only fire success if we have a real payment_id from Razorpay
+        if (response.razorpay_payment_id) {
+          onSuccess({
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+          resolve(true);
+        } else {
+          onFailure('Payment verification failed. No payment ID received.');
+          resolve(false);
+        }
       },
-    },
-  };
+      prefill: {
+        name: orderData.userName || '',
+        email: orderData.userEmail || '',
+        contact: orderData.userPhone || '',
+      },
+      theme: {
+        color: '#1E3A8A',
+      },
+      modal: {
+        ondismiss: () => {
+          onFailure('Payment was cancelled.');
+          resolve(false);
+        },
+      },
+    };
 
-  // Only inject the order_id if the backend successfully generated one
-  if (orderData.orderId) {
-    options.order_id = orderData.orderId;
-  }
+    const rzp = new window.Razorpay(options);
 
-  const rzp = new window.Razorpay(options);
-  
-  // Safely hook Razorpay failure events natively
-  rzp.on('payment.failed', function (response) {
-    onFailure(`Payment rejected: ${response.error.description}`);
+    rzp.on('payment.failed', function (resp) {
+      onFailure(`Payment failed: ${resp.error.description}`);
+      resolve(false);
+    });
+
+    rzp.open();
   });
-
-  rzp.open();
 };
