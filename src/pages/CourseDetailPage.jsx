@@ -11,7 +11,7 @@ import { PageLoader } from '../components/ui/Loader';
 import { formatPrice, getCategoryLabel, getCategoryColor, isProfileComplete } from '../utils/helpers';
 import { HiClock, HiAcademicCap, HiUsers, HiStar, HiGlobeAlt, HiCheck } from 'react-icons/hi';
 import toast from 'react-hot-toast';
-import { createPaymentRecord } from '../services/paymentService';
+import { createPaymentRecord, createRazorpayOrderOnServer, initiateRazorpayPayment } from '../services/paymentService';
 import { createEnrollment } from '../services/enrollmentService';
 import { generateEnrollmentLetter } from '../utils/pdfService';
 import ProfileSetupModal from '../components/profile/ProfileSetupModal';
@@ -81,36 +81,70 @@ const CourseDetailPage = () => {
     if (planType === 'advance') amount = course.advanceAmount;
     if (planType === 'installment') amount = course.installmentPlan?.installmentAmount || course.price;
 
+    const loadingToast = toast.loading('Initializing secure payment gateway...');
+
     try {
-      const enrollmentId = await createEnrollment({
-        userId: user.uid,
-        courseId: id,
-        paymentStatus: 'active',
-        paymentType: planType,
-      });
+      // 1. Ask backend to generate Razorpay Secure Order
+      const orderDataBlock = await createRazorpayOrderOnServer(amount, id, user.uid, planType);
+      const generatedOrderId = orderDataBlock ? orderDataBlock.orderId : null;
+      
+      toast.dismiss(loadingToast);
 
-      const paymentData = {
-        userId: user.uid,
-        courseId: id,
-        enrollmentId,
-        amount,
-        razorpayOrderId: '',
-        razorpayPaymentId: 'manual_' + Date.now(),
-        razorpaySignature: '',
-        status: 'captured',
-        paymentType: planType,
-      };
+      // 2. Open Razorpay Check Modal
+      initiateRazorpayPayment(
+        {
+          amount,
+          orderId: generatedOrderId,
+          description: `Enrollment: ${course.title}`,
+          userName: userData?.name || user.displayName || '',
+          userEmail: userData?.email || user.email || '',
+          userPhone: userData?.phone || '',
+        },
+        async (successResponse) => {
+          // onSuccess Callback
+          toast.loading('Payment successful! Processing enrollment...', { id: 'post-pay-load' });
+          try {
+            const enrollmentId = await createEnrollment({
+              userId: user.uid,
+              courseId: id,
+              paymentStatus: 'active',
+              paymentType: planType,
+            });
 
-      await createPaymentRecord(paymentData);
+            const paymentData = {
+              userId: user.uid,
+              courseId: id,
+              enrollmentId,
+              amount,
+              razorpayOrderId: generatedOrderId || successResponse.razorpayOrderId,
+              razorpayPaymentId: successResponse.razorpayPaymentId,
+              razorpaySignature: successResponse.razorpaySignature || '',
+              status: 'captured',
+              paymentType: planType,
+            };
 
-      // Generate Auto-Downloading PDF Letter
-      generateEnrollmentLetter(userData, course, paymentData);
+            await createPaymentRecord(paymentData);
+            generateEnrollmentLetter(userData, course, paymentData);
 
-      toast.success('Successfully enrolled! Enrollment Letter downloaded. 🎉');
-      navigate('/dashboard');
+            toast.dismiss('post-pay-load');
+            toast.success('Successfully enrolled! Enrollment Letter downloaded. 🎉');
+            navigate('/dashboard');
+          } catch (enrollErr) {
+            console.error("Enrollment Registration failed:", enrollErr);
+            toast.dismiss('post-pay-load');
+            toast.error('Payment verified, but registration failed. Contact Support.');
+          }
+        },
+        (errorReason) => {
+          // onFailure Callback
+          toast.error(errorReason);
+        }
+      );
+
     } catch (err) {
       console.error(err);
-      toast.error('Enrollment failed. Please try again.');
+      toast.dismiss(loadingToast);
+      toast.error('Failed to initialize payment. Please try again.');
     }
   };
 

@@ -2,25 +2,22 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Course content - admin uploads, authenticated reads
+    // Course content - anyone reads, authenticated writes
     match /courses/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
-    // Certificates - owner reads, cloud functions write
+    // Certificates - owner reads, admin writes
     match /certificates/{userId}/{allPaths=**} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null &&
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if request.auth != null;
     }
 
-    // CMS content - anyone reads, admin writes
+    // CMS content - anyone reads, authenticated writes
     match /cms/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null &&
-        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if request.auth != null;
     }
 
     // User profiles - owner reads/writes

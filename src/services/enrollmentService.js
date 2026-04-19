@@ -9,11 +9,17 @@ const ENROLLMENTS_COL = 'enrollments';
 export const getEnrollmentsByUser = async (userId) => {
   const q = query(
     collection(db, ENROLLMENTS_COL),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  
+  // Sort client-side to avoid composite index error
+  return docs.sort((a, b) => {
+    const timeA = a.createdAt?.toMillis() || 0;
+    const timeB = b.createdAt?.toMillis() || 0;
+    return timeB - timeA;
+  });
 };
 
 export const getEnrollment = async (userId, courseId) => {
@@ -69,9 +75,14 @@ export const markLessonComplete = async (enrollmentId, lessonId, totalLessons) =
 };
 
 export const getAllEnrollments = async () => {
-  const q = query(collection(db, ENROLLMENTS_COL), orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snapshot = await getDocs(collection(db, ENROLLMENTS_COL));
+  const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  
+  return docs.sort((a, b) => {
+    const timeA = a.createdAt?.toMillis() || 0;
+    const timeB = b.createdAt?.toMillis() || 0;
+    return timeB - timeA;
+  });
 };
 
 export const getEnrollmentsCount = async () => {

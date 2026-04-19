@@ -4,11 +4,17 @@ import { getCoursesCount } from '../../services/courseService';
 import { getEnrollmentsCount } from '../../services/enrollmentService';
 import { getTotalRevenue } from '../../services/paymentService';
 import { formatPrice } from '../../utils/helpers';
-import { HiAcademicCap, HiUsers, HiCurrencyRupee, HiTrendingUp } from 'react-icons/hi';
+import { HiAcademicCap, HiUsers, HiCurrencyRupee, HiTrendingUp, HiExclamation } from 'react-icons/hi';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../hooks/useAuth';
+import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({ courses: 0, enrollments: 0, revenue: 0 });
   const [loading, setLoading] = useState(true);
+  const [wiping, setWiping] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -27,6 +33,43 @@ const AdminDashboard = () => {
     };
     load();
   }, []);
+
+  const handleWipeData = async () => {
+    if (!window.confirm("CRITICAL WARNING: This will permanently delete ALL courses, enrollments, payments, and users (except you). Are you absolutely sure?")) return;
+    if (prompt("Type 'WIPE' to confirm.") !== "WIPE") {
+      toast.error('Wipe cancelled.');
+      return;
+    }
+
+    setWiping(true);
+    let deletedCount = 0;
+    try {
+      const collectionsToWipe = ['courses', 'enrollments', 'payments', 'lessons'];
+      for (const colName of collectionsToWipe) {
+        const snap = await getDocs(collection(db, colName));
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, colName, d.id));
+          deletedCount++;
+        }
+      }
+      
+      const usersSnap = await getDocs(collection(db, 'users'));
+      for (const d of usersSnap.docs) {
+        if (d.data()?.role !== 'admin' && d.id !== user?.uid) {
+          await deleteDoc(doc(db, 'users', d.id));
+          deletedCount++;
+        }
+      }
+
+      toast.success(`System wiped successfully! Removed ${deletedCount} documents.`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to wipe some data.');
+    } finally {
+      setWiping(false);
+    }
+  };
 
   const statCards = [
     { title: 'Total Courses', value: stats.courses, icon: HiAcademicCap, gradient: 'from-blue-500 to-blue-600', change: '+2 this month' },
@@ -100,6 +143,28 @@ const AdminDashboard = () => {
               </div>
             ))}
           </div>
+        </Card>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-8">
+        <Card className="border-red-200 bg-red-50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+              <HiExclamation className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-heading font-bold text-red-800">Danger Zone</h3>
+              <p className="text-red-600 text-sm">Wipe all demo data from the system.</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleWipeData} 
+            disabled={wiping}
+            className="px-6 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            {wiping ? 'Erasing System...' : 'Wipe Clean'}
+          </button>
         </Card>
       </div>
     </div>
